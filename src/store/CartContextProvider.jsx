@@ -1,4 +1,4 @@
-import React, { createContext, useState, useReducer } from "react";
+import React, { createContext, useReducer } from "react";
 
 export const CartContext = createContext({
   items: [],
@@ -16,7 +16,26 @@ const cartReducer = (state, action) => {
   switch (action.type) {
     case "ADD": {
       const { item } = action;
-      const updatedItems = [...state.items, item];
+      const existingCartItemIndex = state.items.findIndex(
+        (existingItem) => existingItem.id === item.id
+      );
+
+      const existingCartItem = state.items[existingCartItemIndex];
+
+      let updatedItems;
+
+      if (existingCartItem) {
+        const updatedItem = {
+          ...existingCartItem,
+          amount: existingCartItem.amount + item.amount,
+        };
+
+        updatedItems = [...state.items];
+        updatedItems[existingCartItemIndex] = updatedItem;
+      } else {
+        updatedItems = [...state.items, item];
+      }
+
       const updatedTotalAmount = state.totalAmount + item.price * item.amount;
 
       return {
@@ -25,10 +44,37 @@ const cartReducer = (state, action) => {
       };
     }
 
-    case "REMOVE":
+    case "REMOVE": {
+      const { itemID } = action;
+
+      const existingItem = state.items.find(
+        (existingItem) => existingItem.id === itemID
+      );
+
+      let updatedItems;
+
+      if (existingItem.amount > 1) {
+        updatedItems = state.items.map((existingItem) => {
+          if (existingItem.id === itemID) {
+            return {
+              ...existingItem,
+              amount: existingItem.amount - 1,
+            };
+          }
+
+          return existingItem;
+        });
+      } else {
+        updatedItems = state.items.filter(
+          (existingItem) => existingItem.id !== itemID
+        );
+      }
+
       return {
         ...state,
+        items: updatedItems,
       };
+    }
 
     default:
       return state;
